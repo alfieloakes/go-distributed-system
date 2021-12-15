@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -129,9 +130,20 @@ func postsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func middlewareHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Before handler, middleware start")
+		handler.ServeHTTP(w, r)
+		fmt.Println("After handler, middleware finsihed")
+	})
+}
+
 func main() {
-	http.HandleFunc("/posts", postsHandler)
-	http.HandleFunc("/posts/", postHandler)
+	postListHandler := http.HandlerFunc(postsHandler)
+	postItemHandler := http.HandlerFunc(postHandler)
+
+	http.Handle("/posts", middlewareHandler(postListHandler))
+	http.Handle("/posts/", middlewareHandler(postItemHandler))
 	err := http.ListenAndServe(":3000", nil)
 
 	if err != nil {
